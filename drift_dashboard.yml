@@ -1,0 +1,16 @@
+application_metadata:
+  id: "1"
+  name: "Application 1"
+dashboards:
+- name: "Drift Dashboard"
+  metrics:
+  - name: "Accuracy"
+    layout: {
+      accuracy: {w: 6, h: 8, x: 0, y: 0}
+    }
+  - name: "PSI"
+    layout: {
+      psi: {w: 6, h: 8, x: 6, y: 0}
+    }
+- name: "Placeholder"
+  metrics: []
