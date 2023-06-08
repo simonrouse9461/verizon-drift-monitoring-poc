@@ -13,6 +13,8 @@ import requests
 #%%
 GRAFANA_ENDPOINT = "http://localhost:3000/"
 GRAFANA_TOKEN = os.environ["GRAFANA_TOKEN"]
+POSTGRES_ENDPOINT = "my-postgresql-release.default.svc.cluster.local:5432"
+POSTGRES_USER = "postgres"
 POSTGRES_PASSWORD = os.environ["POSTGRES_PASSWORD"]
 
 #%%
@@ -32,8 +34,8 @@ response = requests.request(
         "name": application_name,
         "type": "postgres",
         "access": "proxy",
-        "url": "my-postgresql-release.default.svc.cluster.local:5432",
-        "user": "postgres",
+        "url": POSTGRES_ENDPOINT,
+        "user": POSTGRES_USER,
         "database": f"application_{application_id}",
         "basicAuth": False,
         "isDefault": False,

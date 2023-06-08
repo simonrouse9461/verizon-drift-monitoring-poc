@@ -13,7 +13,8 @@ from sqlalchemy_utils import database_exists, create_database
 
 #%%
 POSTGRES_PASSWORD = os.environ["POSTGRES_PASSWORD"]
-POSTGRES_URL = f"postgresql+psycopg://postgres:{POSTGRES_PASSWORD}@localhost/"
+POSTGRES_USERNAME = "postgres"
+POSTGRES_URL = f"postgresql+psycopg://{POSTGRES_USERNAME}:{POSTGRES_PASSWORD}@localhost/"
 
 #%%
 application_config = yaml.safe_load(open(sys.argv[1]))
