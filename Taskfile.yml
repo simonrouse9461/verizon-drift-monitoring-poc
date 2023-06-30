@@ -1,0 +1,30 @@
+version: '3'
+
+vars:
+  IMAGE_NAME: 'us-central1-docker.pkg.dev/healthy-earth-389717/verizon-drift-monitoring/dataproc-job-env:latest'
+  GCP_PROJECT: 'healthy-earth-389717'
+  GCP_REGION: 'us-central1'
+  GCP_DATAPROC_CLUSTER: 'verizon-drift-monitoring'
+  SPARK_JOB_PROPERTIES: './spark_job.properties'
+
+tasks:
+  build:
+    cmds:
+      - docker build --platform linux/amd64 -t {{.IMAGE_NAME}} .
+
+  push:
+    cmds:
+      - docker push {{.IMAGE_NAME}}
+
+  submit:
+    cmds:
+      - gcloud dataproc --project={{.GCP_PROJECT}}
+        jobs submit pyspark {{.CLI_ARGS}}
+        --cluster={{.GCP_DATAPROC_CLUSTER}}
+        --region={{.GCP_REGION}}
+        --properties-file={{.SPARK_JOB_PROPERTIES}}
+
+  test:
+    cmds:
+      - echo {{.CLI_ARGS}}
+      - echo {{.SHELL}}

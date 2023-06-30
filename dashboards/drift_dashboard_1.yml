@@ -1,0 +1,16 @@
+application_metadata:
+  id: "1"
+  name: "Application 1"
+dashboards:
+- name: "Drift Dashboard"
+  metrics:
+  - id: "model_acc"
+    type: "Accuracy"
+    params: {}
+    source_data: {
+      baseline: "baseline_data_table",
+      realtime: "realtime_data_table"
+    }
+    layout: {
+      accuracy: { w: 12, h: 16, x: 0, y: 0 }
+    }

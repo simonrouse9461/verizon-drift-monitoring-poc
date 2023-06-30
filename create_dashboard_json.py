@@ -1,5 +1,5 @@
 #%%
-from metrics import MetricRegistry
+from src.metrics import MetricRegistry
 
 import dotenv
 dotenv.load_dotenv()
@@ -11,10 +11,10 @@ import yaml
 import requests
 
 #%%
-GRAFANA_ENDPOINT = "http://localhost:3000/"
+GRAFANA_ENDPOINT = os.environ["GRAFANA_EXTERNAL_NDPOINT"]
 GRAFANA_TOKEN = os.environ["GRAFANA_TOKEN"]
-POSTGRES_ENDPOINT = "my-postgresql-release.default.svc.cluster.local:5432"
-POSTGRES_USER = "postgres"
+POSTGRES_ENDPOINT = os.environ["POSTGRES_EXTERNAL_ENDPOINT"]
+POSTGRES_USER = os.environ["POSTGRES_USER"]
 POSTGRES_PASSWORD = os.environ["POSTGRES_PASSWORD"]
 
 #%%
@@ -24,7 +24,7 @@ application_name = application_config["application_metadata"]["name"]
 
 #%%
 response = requests.request(
-    "POST", GRAFANA_ENDPOINT + "api/datasources",
+    "POST", f"http://{GRAFANA_ENDPOINT}/api/datasources",
     headers={
         'Content-Type': 'application/json',
         'Authorization': f'Bearer {GRAFANA_TOKEN}'
@@ -71,9 +71,11 @@ for dashboard_config in application_config["dashboards"]:
 
     panels = []
     for metric_config in dashboard_config["metrics"]:
-        metric_name = metric_config["name"]
+        metric_id = metric_config["id"]
+        metric_type = metric_config["type"]
+        metric_source_data = metric_config["source_data"]
         metric_layout = metric_config["layout"]
-        metric = MetricRegistry.get(metric_name)()
+        metric = MetricRegistry.get(metric_type)()
         panels.extend(metric.get_grafana_panel_json(
             application_id=application_id,
             layout=metric_layout

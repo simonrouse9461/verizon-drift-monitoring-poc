@@ -1,0 +1,28 @@
+application_metadata:
+  id: "2"
+  name: "Application 2"
+dashboards:
+- name: "Drift Dashboard"
+  metrics:
+  - id: "model_acc"
+    type: "Accuracy"
+    params: {}
+    source_data: {
+      baseline: "baseline_data_table",
+      realtime: "realtime_data_table"
+    }
+    layout: {
+      accuracy: { w: 6, h: 8, x: 0, y: 0 }
+    }
+  - id: "score_psi"
+    type: "PSI"
+    params: {}
+    source_data: {
+      baseline: "baseline_data_table",
+      realtime: "realtime_data_table"
+    }
+    layout: {
+      psi: {w: 6, h: 8, x: 6, y: 0}
+    }
+- name: "Placeholder"
+  metrics: []

@@ -1,0 +1,27 @@
+channels:
+  - conda-forge
+  - nodefaults
+dependencies:
+  - python=3.10.*
+  - conda
+  - mamba
+  - poetry
+  - gcsfs
+  - google-cloud-bigquery-storage
+  - google-cloud-bigquery[pandas]
+  - google-cloud-bigtable
+  - google-cloud-container
+  - google-cloud-datacatalog
+  - google-cloud-dataproc
+  - google-cloud-datastore
+  - google-cloud-language
+  - google-cloud-logging
+  - google-cloud-monitoring
+  - google-cloud-pubsub
+  - google-cloud-redis
+  - google-cloud-spanner
+  - google-cloud-speech
+  - google-cloud-storage
+  - google-cloud-texttospeech
+  - google-cloud-translate
+  - google-cloud-vision

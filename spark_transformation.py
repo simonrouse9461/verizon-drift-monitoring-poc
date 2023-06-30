@@ -1,67 +1,90 @@
 #%%
-from metrics import MetricRegistry
+from src.metrics import MetricRegistry
+from src.dataloader import JDBCDataLoader, BigQueryDataLoader
 
 import dotenv
 dotenv.load_dotenv()
 
 import os
 import sys
-import yaml
-
+from functools import partial
+import pandas as pd
+from sqlalchemy import create_engine, Table, MetaData
 from pyspark.sql import SparkSession
+from sqlalchemy.dialects.postgresql import insert
 
 #%%
+POSTGRES_ENDPOINT = os.environ["POSTGRES_EXTERNAL_ENDPOINT"]
+POSTGRES_USER = os.environ["POSTGRES_USER"]
 POSTGRES_PASSWORD = os.environ["POSTGRES_PASSWORD"]
+POSTGRES_PSYCOPG_URL = f"postgresql+psycopg://{POSTGRES_USER}:{POSTGRES_PASSWORD}@{POSTGRES_ENDPOINT}/"
+POSTGRES_JDBC_URL = f"jdbc:postgresql://{POSTGRES_ENDPOINT}/"
 
 #%%
 spark = (SparkSession.builder
-         .master("local[4]")
+         .master("local[2]")
          .config(key="spark.sql.caseSensitive", value=True)
          .config(key="spark.sql.execution.arrow.pyspark.fallback.enabled", value=True)
          .config(key="spark.sql.execution.arrow.pyspark.enabled", value=True)
          .config(key="spark.sql.execution.arrow.pyspark.datetime64.enabled", value=True)
-         .config(key="spark.jars", value="./jar/postgresql-42.6.0.jar")
+         .config(key="spark.jars", value=",".join(["./jars/postgresql-42.6.0.jars",
+                                                   "./jars/spark-3.3-bigquery-0.31.1.jars"]))
          .getOrCreate())
 
 #%%
-baseline_data = spark.read.json("./datasets/baseline_data_predicted_with_timestamp.jsonl")
-realtime_data = spark.read.json("./datasets/realtime_data_predicted_with_timestamp.jsonl")
-
+application_id = sys.argv[1]
+metric_id = sys.argv[2]
 
 #%%
-def get_db_options(database_name, table_name):
-    return dict(
-        url=f"jdbc:postgresql://localhost:5432/{database_name}",
-        dbtable=table_name,
-        user="postgres",
+metadata_engine = create_engine(POSTGRES_PSYCOPG_URL + 'postgres')
+metadata_table = f'metadata.application_{application_id}'
+metric_metadata = pd.read_sql(
+    sql=f'SELECT * FROM {metadata_table}',
+    con=metadata_engine,
+    index_col='metric_id'
+).loc[metric_id]
+
+#%%
+dataloader_dict = {
+    'jdbc': JDBCDataLoader(
+        spark=spark,
+        url=POSTGRES_JDBC_URL + 'postgres',
+        user=POSTGRES_USER,
         password=POSTGRES_PASSWORD,
-        driver="org.postgresql.Driver"
+        schema_name="datasets",
+        driver='org.postgresql.Driver'
+    ),
+    'bigquery': BigQueryDataLoader(
+        spark=spark,
+        project='healthy-earth-389717',
+        dataset_name="datasets",
+        temp_bucket='verizon-drift-monitoring'
     )
+}
+
+source_data = {
+    key: dataloader_dict['bigquery'].from_table(table_name).load()
+    for key, table_name in metric_metadata.source_data.items()
+}
 
 
 #%%
-application_config = yaml.safe_load(open(sys.argv[1]))
-application_id = application_config["application_metadata"]["id"]
-application_name = application_config["application_metadata"]["name"]
+def upsert_partition(partition, metadata):
+    engine = create_engine(POSTGRES_PSYCOPG_URL + f"application_{application_id}")
+    table = Table(metadata["table_name"], MetaData(), autoload_with=engine)
+    with engine.begin() as connection:
+        for row in partition:
+            connection.execute(insert(table).values(row.asDict()).on_conflict_do_update(
+                index_elements=["timestamp"],
+                set_=row.asDict()
+            ))
+
 
 #%%
-for dashboard_config in application_config["dashboards"]:
-    dashboard_name = dashboard_config["name"]
-    for metric_config in dashboard_config["metrics"]:
-        metric_name = metric_config["name"]
-        metric_layout = metric_config["layout"]
-        metric = MetricRegistry.get(metric_name)()
-        df_dict = metric.transform_metric(
-            baseline_data=baseline_data,
-            realtime_data=realtime_data,
-            spark=spark
-        )
-        for panel_name, metadata in metric.charts_metadata.items():
-            (df_dict[panel_name]
-             .write.format('jdbc')
-             .options(**get_db_options(
-                database_name=f"application_{application_id}",
-                table_name=metadata["table_name"]
-             ))
-             .mode("append")
-             .save())
+metric = MetricRegistry.get(metric_metadata.metric_type)()
+df_dict = metric.transform_metric(
+    source_data=source_data,
+    spark=spark
+)
+for panel_name, metadata in metric.charts_metadata.items():
+    df_dict[panel_name].foreachPartition(partial(upsert_partition, metadata=metadata))
