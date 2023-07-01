@@ -1,11 +1,11 @@
 version: '3'
 
 vars:
-  IMAGE_NAME: 'us-central1-docker.pkg.dev/healthy-earth-389717/verizon-drift-monitoring/dataproc-job-env:latest'
+  IMAGE_NAME: 'us-central1-docker.pkg.dev/healthy-earth-389717/verizon-drift-monitoring/spark-job-env:latest'
   GCP_PROJECT: 'healthy-earth-389717'
   GCP_REGION: 'us-central1'
   GCP_DATAPROC_CLUSTER: 'verizon-drift-monitoring'
-  SPARK_JOB_PROPERTIES: './spark_job.properties'
+  SPARK_JOB_PROPERTIES: './spark-job.properties'
 
 tasks:
   build:
@@ -21,19 +21,36 @@ tasks:
       - python create_database_tables.py {{.CLI_ARGS}}
       - python create_dashboard_json.py {{.CLI_ARGS}}
 
+  zip:
+    cmds:
+      - zip -r src.zip src/
+
   transform:
     cmds:
-      - python spark_transformation.py {{.CLI_ARGS}}
+      - python spark_transform.py {{.CLI_ARGS}}
 
   submit-transform:
     cmds:
+      - task: zip
       - gcloud dataproc --project={{.GCP_PROJECT}}
-        jobs submit pyspark spark_transformation.py
+        jobs submit pyspark spark_transform.py
         --cluster={{.GCP_DATAPROC_CLUSTER}}
         --region={{.GCP_REGION}}
         --properties-file={{.SPARK_JOB_PROPERTIES}}
         --files=.env.dataproc
+        --py-files=src.zip
         -- {{.CLI_ARGS}}
+
+  submit-test:
+    cmds:
+      - task: zip
+      - gcloud dataproc --project={{.GCP_PROJECT}}
+        jobs submit pyspark spark_test.py
+        --cluster={{.GCP_DATAPROC_CLUSTER}}
+        --region={{.GCP_REGION}}
+        --properties-file={{.SPARK_JOB_PROPERTIES}}
+        --files=.env.dataproc
+        --py-files=src.zip
 
   test:
     cmds:

@@ -17,7 +17,7 @@ with DAG(
         task_id="ETL",
         bash_command="""
         cd /Users/chuhan/Workspaces/verizon-drift-monitoring-poc
-        /opt/homebrew/anaconda3/bin/python spark_transformation.py {{ params.application_id }} {{ params.metric_id }}
+        /opt/homebrew/anaconda3/bin/python spark_transform.py {{ params.application_id }} {{ params.metric_id }}
         """,
     )
 

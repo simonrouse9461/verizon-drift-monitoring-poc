@@ -13,7 +13,7 @@ RUN mkdir -p "${SPARK_EXTRA_JARS_DIR}"
 COPY jars/*.jar "${SPARK_EXTRA_JARS_DIR}"
 
 # Optional: Install and configure Miniconda3.
-ENV CONDA_HOME=/opt/miniconda3
+ENV CONDA_HOME=/opt/mambaforge
 ENV PYSPARK_PYTHON=${CONDA_HOME}/bin/python
 ENV PYSPARK_DRIVER_PYTHON=${CONDA_HOME}/bin/python
 
@@ -22,16 +22,11 @@ COPY scripts/Mambaforge-Linux-x86_64.sh ./
 RUN bash Mambaforge-Linux-x86_64.sh -b -p ${CONDA_HOME}
 
 # Optional: Install Conda packages.
-COPY environments/dataproc.yml poetry.toml pyproject.toml ./
-RUN ${CONDA_HOME}/bin/mamba env update --name base --file dataproc.yml --prune
+COPY environment-dataproc.yml poetry.toml pyproject.toml ./
+RUN ${CONDA_HOME}/bin/mamba env update --name base --file environment-dataproc.yml --prune
 RUN poetry config virtualenvs.path /
 RUN poetry env use ${PYSPARK_PYTHON}
 RUN poetry install
-
-# Optional: Add extra Python modules.
-ENV PYTHONPATH=/opt/python/packages
-RUN mkdir -p "${PYTHONPATH}"
-COPY test_util.py "${PYTHONPATH}"
 
 # Required: Create the 'yarn_docker_user' group/user.
 # The GID and UID must be 1099. Home directory is required.
