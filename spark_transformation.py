@@ -2,10 +2,10 @@
 from src.metrics import MetricRegistry
 from src.dataloader import JDBCDataLoader, BigQueryDataLoader
 
-import dotenv
-dotenv.load_dotenv()
-
 import os
+import dotenv
+assert dotenv.load_dotenv(dotenv_path=os.environ["DOTENV_PATH"])
+
 import sys
 from functools import partial
 import pandas as pd

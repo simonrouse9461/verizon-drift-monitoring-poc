@@ -153,7 +153,8 @@ celerybeat.pid
 *.sage.py
 
 # Environments
-.env
+.env.remote
+.env.*
 .venv
 env/
 venv/

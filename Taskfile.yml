@@ -16,13 +16,24 @@ tasks:
     cmds:
       - docker push {{.IMAGE_NAME}}
 
-  submit:
+  deploy:
+    cmds:
+      - python create_database_tables.py {{.CLI_ARGS}}
+      - python create_dashboard_json.py {{.CLI_ARGS}}
+
+  transform:
+    cmds:
+      - python spark_transformation.py {{.CLI_ARGS}}
+
+  submit-transform:
     cmds:
       - gcloud dataproc --project={{.GCP_PROJECT}}
-        jobs submit pyspark {{.CLI_ARGS}}
+        jobs submit pyspark spark_transformation.py
         --cluster={{.GCP_DATAPROC_CLUSTER}}
         --region={{.GCP_REGION}}
         --properties-file={{.SPARK_JOB_PROPERTIES}}
+        --files=.env.dataproc
+        -- {{.CLI_ARGS}}
 
   test:
     cmds:
