@@ -338,6 +338,27 @@ MarkupSafe = ">=2.0"
 i18n = ["Babel (>=2.7)"]
 
 [[package]]
+name = "jinja2-cli"
+version = "0.8.2"
+description = "A CLI interface to Jinja2"
+optional = false
+python-versions = "*"
+files = [
+    {file = "jinja2-cli-0.8.2.tar.gz", hash = "sha256:a16bb1454111128e206f568c95938cdef5b5a139929378f72bb8cf6179e18e50"},
+    {file = "jinja2_cli-0.8.2-py2.py3-none-any.whl", hash = "sha256:b91715c79496beaddad790171e7258a87db21c1a0b6d2b15bca3ba44b74aac5d"},
+]
+
+[package.dependencies]
+jinja2 = "*"
+pyyaml = {version = "*", optional = true, markers = "extra == \"yaml\""}
+
+[package.extras]
+tests = ["flake8", "jinja2", "pytest"]
+toml = ["jinja2", "toml"]
+xml = ["jinja2", "xmltodict"]
+yaml = ["jinja2", "pyyaml"]
+
+[[package]]
 name = "kiwisolver"
 version = "1.4.4"
 description = "A fast implementation of the Cassowary constraint solver"
@@ -1286,4 +1307,4 @@ zstd = ["zstandard (>=0.18.0)"]
 [metadata]
 lock-version = "2.0"
 python-versions = "~3.10"
-content-hash = "c646fff5a964bf1db862decf44f578dbb6401edd3c14f42e31395f652a375eae"
+content-hash = "9feb0e1219eebb881b5370e1f2f97ce3e170a1c9d00f37fd8960d927480ced5b"

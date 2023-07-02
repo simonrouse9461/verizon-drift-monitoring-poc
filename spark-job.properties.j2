@@ -1,11 +1,11 @@
 # Application Master ENV
 spark.yarn.appMasterEnv.YARN_CONTAINER_RUNTIME_TYPE=docker
-spark.yarn.appMasterEnv.YARN_CONTAINER_RUNTIME_DOCKER_IMAGE={{ SPARK_JOB_DOCKER_IMAGE }}
+spark.yarn.appMasterEnv.YARN_CONTAINER_RUNTIME_DOCKER_IMAGE={{ vars.SPARK_JOB_DOCKER_IMAGE }}
 
 # Executor ENV
 spark.executorEnv.YARN_CONTAINER_RUNTIME_TYPE=docker
-spark.executorEnv.YARN_CONTAINER_RUNTIME_DOCKER_IMAGE={{ SPARK_JOB_DOCKER_IMAGE }}
-spark.executorEnv.DOTENV_PATH={{ SPARK_JOB_DOTENV_PATH }}
+spark.executorEnv.YARN_CONTAINER_RUNTIME_DOCKER_IMAGE={{ vars.SPARK_JOB_DOCKER_IMAGE }}
+spark.executorEnv.DOTENV_PATH={{ vars.SPARK_JOB_DOTENV_FILE }}
 
 # Spark Properties
 spark.pyspark.python=/opt/mambaforge/bin/python

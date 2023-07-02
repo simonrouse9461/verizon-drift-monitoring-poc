@@ -24,6 +24,14 @@ sqlalchemy-utils = "^0.41.1"
 pyarrow = "^12.0.1"
 
 
+### Development utilities ###
+[tool.poetry.group.dev-utils]
+optional = true
+
+[tool.poetry.group.dev-utils.dependencies]
+jinja2-cli = {extras = ["yaml"], version = "^0.8.2"}
+
+
 [[tool.poetry.source]]
 name = "PyPI"
 priority = "primary"
