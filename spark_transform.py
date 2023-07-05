@@ -1,15 +1,16 @@
 #%%
-from src.metrics import MetricRegistry
-from src.dataloader import JDBCDataLoader, BigQueryDataLoader
-
 import os
 import dotenv
 assert dotenv.load_dotenv(dotenv_path=os.environ.get('DOTENV_PATH', '.env'))
+
+from src.metrics import MetricRegistry
+from src.dataloader import JDBCDataLoader, BigQueryDataLoader
 
 import sys
 from functools import partial
 import pandas as pd
 from sqlalchemy import create_engine, Table, MetaData
+from pyspark import SparkConf
 from pyspark.sql import SparkSession
 from sqlalchemy.dialects.postgresql import insert
 
@@ -21,15 +22,12 @@ POSTGRES_PSYCOPG_URL = f'postgresql+psycopg://{POSTGRES_USER}:{POSTGRES_PASSWORD
 POSTGRES_JDBC_URL = f'jdbc:postgresql://{POSTGRES_ENDPOINT}/'
 
 #%%
-spark = (SparkSession.builder
-         .master("local[2]")
-         .config(key="spark.sql.caseSensitive", value=True)
-         .config(key="spark.sql.execution.arrow.pyspark.fallback.enabled", value=True)
-         .config(key="spark.sql.execution.arrow.pyspark.enabled", value=True)
-         .config(key="spark.sql.execution.arrow.pyspark.datetime64.enabled", value=True)
-         .config(key="spark.jars", value=",".join(["./jars/postgresql-42.6.0.jar",
-                                                   "./jars/spark-3.3-bigquery-0.31.1.jar"]))
-         .getOrCreate())
+conf = (SparkConf()
+        .set('spark.sql.caseSensitive', 'true')
+        .set('spark.sql.execution.arrow.pyspark.fallback.enabled', 'true')
+        .set('spark.sql.execution.arrow.pyspark.enabled', 'true')
+        .set('spark.sql.execution.arrow.pyspark.datetime64.enabled', 'true'))
+spark = SparkSession.builder.appName("VerizonDriftMonitoring").config(conf=conf).getOrCreate()
 
 #%%
 application_id = sys.argv[1]

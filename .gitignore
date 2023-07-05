@@ -1,7 +1,8 @@
 ### Custom
 .credentials
 datasets/
-spark-job.properties
+src.zip
+poetry.lock
 
 ### macOS template
 # General

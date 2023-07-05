@@ -4,61 +4,66 @@ vars:
   GCP_PROJECT: 'healthy-earth-389717'
   GCP_REGION: 'us-central1'
   GCP_DATAPROC_CLUSTER: 'verizon-drift-monitoring'
-  SPARK_JOB_DOCKER_IMAGE: 'us-central1-docker.pkg.dev/healthy-earth-389717/verizon-drift-monitoring/spark-job-env:latest'
-  SPARK_JOB_PROPERTIES: 'spark-job.properties'
+  SPARK_JOB_DOCKER_IMAGE: 'us-central1-docker.pkg.dev/healthy-earth-389717/verizon-drift-monitoring/spark-job-env'
+  SPARK_JOB_CONFIG_FILE: 'spark_conf/dataproc/spark-defaults.conf'
+  SPARK_JOB_PYTHON_MODULE: 'src'
   SPARK_JOB_DOTENV_FILE: '.env.dataproc'
+  SPARK_JOB_DOTENV_FILE_LOCAL: '.env.remote'
+
+includes:
+  docker: taskfiles/DockerTasks.yml
 
 tasks:
-  build:
+  deploy-dashboard:
     cmds:
-      - docker build --platform linux/amd64 -t {{.SPARK_JOB_DOCKER_IMAGE}} .
+      - python bootstrap_database.py {{.CLI_ARGS}}
+      - python upload_dashboard.py {{.CLI_ARGS}}
 
-  push:
+  zip-src:
     cmds:
-      - docker push {{.SPARK_JOB_DOCKER_IMAGE}}
+      - zip -r {{.SPARK_JOB_PYTHON_MODULE}}.zip {{.SPARK_JOB_PYTHON_MODULE}}/
 
-  deploy:
+  generate-spark-config:
     cmds:
-      - python create_database_tables.py {{.CLI_ARGS}}
-      - python create_dashboard_json.py {{.CLI_ARGS}}
-
-  zip:
-    cmds:
-      - zip -r src.zip src/
-
-  generate-properties:
-    cmds:
-      - jinja2 --format=yml {{.SPARK_JOB_PROPERTIES}}.j2 Taskfile.yml > {{.SPARK_JOB_PROPERTIES}}
+      - jinja2 --format=yml {{.SPARK_JOB_CONFIG_FILE}}.j2 Taskfile.yml > {{.SPARK_JOB_CONFIG_FILE}}
 
   transform:
+    env:
+      DOTENV_PATH: '{{.SPARK_JOB_DOTENV_FILE_LOCAL}}'
     cmds:
       - python spark_transform.py {{.CLI_ARGS}}
 
-  submit-transform:
+  transform-docker:
     cmds:
-      - task: zip
-      - task: generate-properties
+      - docker run -w /mnt -v $(pwd):/mnt {{.SPARK_JOB_DOCKER_IMAGE}} 
+        -e DOTENV_PATH={{.SPARK_JOB_DOTENV_FILE_LOCAL}}
+        python spark_transform.py {{.CLI_ARGS}}
+
+  transform-dataproc:
+    cmds:
+      - task: zip-src
+      - task: generate-spark-config
       - gcloud dataproc --project={{.GCP_PROJECT}}
         jobs submit pyspark spark_transform.py
         --cluster={{.GCP_DATAPROC_CLUSTER}}
         --region={{.GCP_REGION}}
-        --properties-file={{.SPARK_JOB_PROPERTIES}}
+        --properties-file={{.SPARK_JOB_CONFIG_FILE}}
         --files={{.SPARK_JOB_DOTENV_FILE}}
-        --py-files=src.zip
+        --py-files={{.SPARK_JOB_PYTHON_MODULE}}.zip
         -- {{.CLI_ARGS}}
 
-  submit-test:
+  dataproc-test:
     cmds:
-      - task: zip
+      - task: zip-src
+      - task: generate-spark-config
       - gcloud dataproc --project={{.GCP_PROJECT}}
         jobs submit pyspark spark_test.py
         --cluster={{.GCP_DATAPROC_CLUSTER}}
         --region={{.GCP_REGION}}
-        --properties-file={{.SPARK_JOB_PROPERTIES}}
+        --properties-file={{.SPARK_JOB_CONFIG_FILE}}
         --files={{.SPARK_JOB_DOTENV_FILE}}
-        --py-files=src.zip
+        --py-files={{.SPARK_JOB_PYTHON_MODULE}}.zip
 
   test:
     cmds:
       - echo {{.CLI_ARGS}}
-      - echo {{.SHELL}}

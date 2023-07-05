@@ -1,0 +1,26 @@
+version: '3'
+
+tasks:
+  build:
+    cmds:
+      - docker build --platform linux/amd64 -t {{.SPARK_JOB_DOCKER_IMAGE}} .
+
+  build-dev:
+    cmds:
+      - docker build --platform linux/amd64 -f Dockerfile.dev -t {{.SPARK_JOB_DOCKER_IMAGE}}:dev .
+
+  shell:
+    cmds:
+      - docker run -it -v $(pwd):/mnt {{.SPARK_JOB_DOCKER_IMAGE}} bash
+
+  shell-as-root:
+    cmds:
+      - docker run --user=root -it -v $(pwd):/mnt {{.SPARK_JOB_DOCKER_IMAGE}} bash
+
+  shell-dev:
+    cmds:
+      - docker run -it -v $(pwd):/mnt {{.SPARK_JOB_DOCKER_IMAGE}}:dev bash
+
+  push:
+    cmds:
+      - docker push {{.SPARK_JOB_DOCKER_IMAGE}}
